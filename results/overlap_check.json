@@ -1,0 +1,49 @@
+{
+  "n_unique_fillers": 821,
+  "in_training_exact": 28,
+  "in_training_whitespace_normalized": 28,
+  "dialogues_with_overlap_by_k": {
+    "2": {
+      "dialogues": 60,
+      "with_overlap": 6
+    },
+    "4": {
+      "dialogues": 60,
+      "with_overlap": 6
+    },
+    "8": {
+      "dialogues": 60,
+      "with_overlap": 15
+    }
+  },
+  "overlapping_fillers": [
+    "All of the listed games are very popular and widely well regarded. I'm looking for hidden gem games that are a bit less popular, can you list some for me?",
+    "Based on your response, can you summarize the text in to keypoints?",
+    "Between a purely objective and a purely subjective feedback from a professional critic, which one hold more value to the criticized subject in terms of helpfulness?",
+    "Can you describe the current understanding of the human brain and its potential for unlocking new therapies for neurological disorders?",
+    "Can you elaborate on the effectiveness of each method? And,  the intercorrelation of different methods to create a more effective synthesis.",
+    "Can you provide me some sample code to access the InstructGPT API in python?",
+    "Can you tell me about its origin/history? Also from a scientific perspective pls",
+    "Glad to know, thank you. Can you post full the lyrics for it?",
+    "Has there been any popular names that have tanked in popularity after a person with the same name became infamous.",
+    "How can you answer about so many different topics?",
+    "I want to create my own local server. it should be a alternative to cloud providers. but I also want to run a Minecraft server on it. How can i do that and what information is important?",
+    "In what situations would I want to use a reference vs a box?",
+    "Is it possible to grow mint from cuttings?",
+    "Now explain in more detail why the reconstruction problem is ill-posed and how this is resolved in the computer. In your answer, please mention also fundamental resolution limits and how they can be derived.",
+    "Now write the same thing but with different game, Skyrim.",
+    "Please also explain memory management in Rust and how lifetimes fit in to that, with examples.",
+    "Please make a table of all notable planets in the solar system. The list should contain their name; their astronomical symbol; their distance from the sun in AU on average, closest, furthest; their mass in Earth masses and finally their diameter in earth diameters for each planet.",
+    "Statistically who is the best NBA player of all time and who is the best active player? Compare the stats and figure out the exact percentage needed and area for the active player must improve on the become the best player of all time.",
+    "Thanks! Could you change the section headers to Markdown? (\"# <title>\" instead of \"<title>:\")",
+    "What are some common ways to aid in protecting the life of civilians in a country that is at war and under constant attack?",
+    "What are the different deck archetypes in Clash Royale? My friend recently told me he uses a 'control' deck, and that I use a 'cycle' deck, but I don't really understand what that means.",
+    "What differences are there between ChatGPT and Instructional GPT?",
+    "What is the difference between kinetic energy and gravitational potential energy?",
+    "Where does palm oil come from and why is it bad for the environment?",
+    "Why is it important to add epsilon before rounding? What's the error that can happen here, and what about this situation makes it matter here?",
+    "Why is there an inherent imprecision of floating-point numbers?",
+    "Why was the PE/COFF format of executables, used in MS Windows, chosen as the executable format for UEFI? The ELF format is the de-facto standard in modern UNIX-based systems, and it has good support in the compiler toolchains. Why was PE chosen instead of ELF, then?",
+    "want to play chess? make a chessboard using this method \n[X][X]\n[X][X]\nX is a generic symbol to represent any piece. create a list of symbols and assign them to each piece"
+  ]
+}

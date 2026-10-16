@@ -1,0 +1,6 @@
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+
+kvp_b128_bf16
+k=2: acc 0.000 (n=2), needle survival at answer 0.348
+k=4: acc 0.000 (n=2), needle survival at answer 0.069
+k=8: acc 0.000 (n=2), needle survival at answer 0.010

@@ -1,0 +1,49 @@
+home_dir: ${oc.env:PROJECT_ROOT}
+remote_dir: s3://no-bucket
+output_dir: data/gqa_safetensors
+
+device: cuda
+dtype: bf16
+
+seed: 1234
+batch_size: 1
+executor_max_workers: 1
+max_new_tokens: 300
+temperature: 0
+top_k: 300
+
+enable_kv_cache: True
+compile: False
+
+model_name: Qwen2.5-0.5B-Instruct
+model_dir: ${oc.env:PROJECT_ROOT}/models/${model_name}
+
+model:
+  _component_: torchtune.models.qwen2_5.qwen2_5_0_5b
+
+checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: ${model_dir}
+  checkpoint_files: [model.safetensors]
+  output_dir: ${output_dir}
+  model_type: QWEN2
+
+tokenizer:
+  _component_: torchtune.models.qwen2_5.qwen2_5_tokenizer
+  path: ${model_dir}/vocab.json
+  merges_file: ${model_dir}/merges.txt
+  max_seq_len: null
+
+max_context_length: null
+
+dataset_name: oasst2_mt
+dataset:
+  _component_: kvcompression.data.oasst2_dataset.OASST2MultiTurnDataset
+  n_samples: 500
+  min_prompt_tokens: 200
+  max_prompt_tokens: 1200
+  min_user_turns: 2
+  seed: 0
+
+total_num_chunks: 1
+current_chunk: 0

@@ -1,0 +1,15 @@
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+kvp_b256_bf16
+k=2: acc 0.867 (n=60), needle survival at answer 0.798
+k=4: acc 0.333 (n=60), needle survival at answer 0.333
+k=8: acc 0.000 (n=60), needle survival at answer 0.078

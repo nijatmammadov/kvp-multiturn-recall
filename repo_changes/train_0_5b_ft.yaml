@@ -1,0 +1,228 @@
+# Train Single Layer/Head Agent
+#
+# This configuration trains an RL agent for KV cache compression on a single (layer, head) combination.
+# This is the recommended starting point for understanding the training pipeline.
+#
+# Prerequisites:
+#   1. Download and preprocess RULER data (see preprocess_ruler.yaml)
+#   2. Download model weights to models/Qwen2.5-7B-Instruct/
+#
+# Run locally (single GPU):
+#   uv run tune run src/kvcompression/entrypoints/rl/train_agent_sampler_distributed.py \
+#       --config configs/train_single_head.yaml distributed=False
+#
+# Run distributed (8 GPUs):
+#   uv run tune run --nproc_per_node 8 src/kvcompression/entrypoints/rl/train_agent_sampler_distributed.py \
+#       --config configs/train_single_head.yaml
+#
+# Train different layer/head:
+#   ... --config configs/train_single_head.yaml target_layer_idx=15 kv_head_idx=2
+
+# Target layer and head to train
+target_layer_idx: 10
+kv_head_idx: 0
+
+# Sweep name for organizing trained agents (used in storage_dir path)
+sweep_name: "oasst2_recall_ft_0_5b"
+
+# Warm start (train_warmstart.py): initialise every agent from the matching OASST2 agent's EMA weights.
+init_from: ${home_dir}/agents/grouped/oasst2_0_5b
+
+# # Sweep configuration reference for training all 112 agents (28 layers x 4 heads).
+# # This shows the grid of layer/head combinations used in our experiments.
+# # Adapt to your own cluster job scheduler as needed.
+# sweep_across_nodes:
+#   target_layer_idx: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
+#   kv_head_idx: [0,1,2,3]
+
+# launcher:
+#   sweep_name: "ruler_opensource_debug_${now:%Y%m%d_%H}"
+#   submit:
+#     config:
+#       setup_command: "bash configs/setups/agent_training_setup.sh --layers ${target_layer_idx} --heads ${kv_head_idx}"
+#       command: >-
+#         source .env &&
+#         uv run tune run --nproc_per_node 8
+#         src/kvcompression/entrypoints/rl/train_agent_sampler_distributed.py
+#         --config ${config_path}
+#         distributed=True
+
+# secrets:
+#   asset: ...
+
+# General Configuration
+seed: 42
+device: "cuda"
+dtype: "bf16"
+deterministic_cudnn: False
+compile_agent: True
+distributed: False
+
+home_dir: ${oc.env:PROJECT_ROOT}
+remote_dir: s3://[your-bucket-here]
+
+# Output directory for trained agents
+# Structure: agents/grouped/{sweep_name}/layer_XXXXXX/kv_head_XXX/
+# Local runs use sweep_name="default_sweep", cluster sweeps use timestamp-based names
+storage_dir: ${home_dir}/agents/grouped/${sweep_name}/layer_${fmt:${target_layer_idx},06d}/kv_head_${fmt:${kv_head_idx},03d}
+
+# Reward strategy - continuous attention-based reward
+reward_strategy:
+  _component_: kvcompression.rl.rewards.basic_strategies.FutureAttentionAucNormalizedReward
+
+# Data Configuration
+# Update dataset_path to point to your preprocessed data
+data:
+  dataset:
+    # OASST2 replay (same traces, split and cut-point rule as the original run) + short RULER-style recall traces.
+    train:
+      _component_: kvcompression.data.mixed_qkv_dataset.MixedQKVDataset
+      target_layer_idx: ${target_layer_idx}
+      kv_head_idx: ${kv_head_idx}
+      query_idx_within_group: null
+      keep_dim: False
+      mmap: True
+      dtype: ${dtype}
+      sources:
+        - dataset_path: "${oc.env:KVCOMPRESSION_DATA_ROOT}/gqa_safetensors/oasst2_mt/Qwen2.5-0.5B-Instruct/temperature_0.00"
+          split_file: "train.txt"
+          randomize_prompt_len: True
+          min_prompt_len: 16
+        - dataset_path: "${oc.env:KVCOMPRESSION_DATA_ROOT}/gqa_safetensors/recall_niah/Qwen2.5-0.5B-Instruct/temperature_0.00"
+          split_file: "train.txt"
+          randomize_prompt_len: False
+
+    val:
+      _component_: kvcompression.data.mixed_qkv_dataset.MixedQKVDataset
+      target_layer_idx: ${target_layer_idx}
+      kv_head_idx: ${kv_head_idx}
+      query_idx_within_group: null
+      keep_dim: False
+      mmap: True
+      dtype: ${dtype}
+      sources:
+        - dataset_path: "${oc.env:KVCOMPRESSION_DATA_ROOT}/gqa_safetensors/oasst2_mt/Qwen2.5-0.5B-Instruct/temperature_0.00"
+          split_file: "val.txt"
+          randomize_prompt_len: False
+        - dataset_path: "${oc.env:KVCOMPRESSION_DATA_ROOT}/gqa_safetensors/recall_niah/Qwen2.5-0.5B-Instruct/temperature_0.00"
+          split_file: "val.txt"
+          randomize_prompt_len: False
+
+# Agent Architecture
+agent:
+  _component_: "kvcompression.rl.agents.kv_sorting_agent.KVSamplingGroupedQueryAgent"
+  head_dim: 64
+  max_seq_length: 6000
+  mlp_hidden_size: 256
+  num_mlp_layers: 2
+  num_queries_per_group: 7
+  pos_embedding_dim: 32
+  processing_dim: 256
+  query_aggregation: null
+  use_kv_queries: false
+
+# EMA Configuration
+ema:
+  decay: 0.99
+
+# Oracle for reward computation
+oracle:
+  _component_: kvcompression.rl.rewards.oracle.Oracle
+
+# Data Loader Configuration
+loader:
+  train:
+    batch_size: 128
+    dataloader_num_workers: 8
+    prefetch_factor: 2
+    dataloader_pin_memory: True
+  eval:
+    batch_size: 16
+    dataloader_num_workers: 4
+    prefetch_factor: 2
+    dataloader_pin_memory: True
+
+# Environment Configuration
+environment:
+  train:
+    _component_: kvcompression.rl.environments.kvsorting_env.KVSortingEnvironmentV2
+    reward_strategy: ${reward_strategy}
+    info_keys_to_log: ${trainer.info_keys_to_log}
+  eval:
+    _component_: kvcompression.rl.environments.kvsorting_env.KVSortingEnvironmentV2
+    reward_strategy: ${reward_strategy}
+    info_keys_to_log: ${trainer.info_keys_to_log}
+
+# Trainer Configuration (RLOO with Gumbel softmax)
+trainer:
+  _component_: kvcompression.rl.trainers.rloo_gumbel_terminal_trainer.RLOOGumbelTrainer
+  entropy_coef: 0
+  max_grad_norm: 5
+  normalize_advantages: True
+  ema_burnin_steps: 100
+  optimizer_config:
+    _component_: torch.optim.AdamW
+    lr: 2.0e-5
+    eps: 1.0e-8
+    weight_decay: 1e-3
+  scheduler_config:
+    _component_: kvcompression.utils.scheduler_factory.SequentialWarmupCosineScheduler
+    warmup_steps: 50
+    total_steps: ${training.num_epochs_or_steps}
+    warmup_start_factor: 0.01
+    cosine_eta_min: 1.0e-6
+  info_keys_to_log: []
+
+# Training Loop Configuration
+training:
+  num_epochs_or_steps: 1_500
+  eval_interval: 100
+  eval_episodes: null
+  save_best_model: True
+  storage_dir: ${storage_dir}
+  save_best_on_metric: "eval_reward"
+
+resume:
+  checkpoint_interval: 100
+  max_checkpoints_to_keep: 3
+
+# Logging Configuration
+logging:
+  tqdm_smoothing_window: 50
+  tqdm_train_metrics: ["total_loss", "episode_reward", "avg_entropy"]
+  tqdm_eval_metrics: ["eval_reward", "eval_length"]
+
+# Plotting Configuration
+plotting:
+  enabled: True
+  smoothing_window: 50
+  plot_training_curves: True
+  plot_loss_curves: True
+  plot_eval_metrics: True
+  custom_metric_grids: []
+
+# Final Evaluation Configuration
+final_evaluation:
+  enabled: True
+  eval_episodes: null
+
+# WandB Configuration (optional)
+wandb:
+  enabled: false
+  name: "${sweep_name}_L${target_layer_idx}_H${kv_head_idx}"
+  project: "kvcompression"
+  entity: null
+
+# Profiler Configuration
+profiler:
+  enabled: False
+  cpu: True
+  cuda: True
+  wait_steps: 1
+  warmup_steps: 1
+  active_steps: 3
+  num_cycles: 2
+  profile_memory: False
+  with_stack: False
+  record_shapes: True
+  with_flops: False

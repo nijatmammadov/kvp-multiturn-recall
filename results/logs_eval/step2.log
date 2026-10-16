@@ -1,0 +1,17 @@
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+D gather (CPU): PASS
+A full-cache incremental vs one-shot forward: max logit diff 8.34e-05, argmax flips 0
+B explicit 4D causal mask vs default mask: max logit diff 0.00e+00
+C k8_000: streaming b=128, len 914, masked (q,k) pairs 284045, max logit diff 8.51e-05, argmax flips 0
+C k8_001: streaming b=128, len 1040, masked (q,k) pairs 381880, max logit diff 7.25e-05, argmax flips 0
+C k8_002: streaming b=128, len 1120, masked (q,k) pairs 454080, max logit diff 7.15e-05, argmax flips 0
+ALL PASS
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+
+full_b0_bf16
+k=8: acc 1.000 (n=1), needle survival at answer 1.000
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+
+streaming_b128_bf16
+k=8: acc 0.000 (n=1), needle survival at answer 0.000
+STEP2 DONE

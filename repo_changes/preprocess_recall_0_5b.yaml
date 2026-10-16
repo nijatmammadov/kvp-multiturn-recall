@@ -1,0 +1,46 @@
+home_dir: ${oc.env:PROJECT_ROOT}
+remote_dir: s3://no-bucket
+output_dir: data/gqa_safetensors
+
+device: cuda
+dtype: bf16
+
+seed: 1234
+batch_size: 1
+executor_max_workers: 1
+max_new_tokens: 128
+temperature: 0
+top_k: 300
+
+enable_kv_cache: True
+compile: False
+
+model_name: Qwen2.5-0.5B-Instruct
+model_dir: ${oc.env:PROJECT_ROOT}/models/${model_name}
+
+model:
+  _component_: torchtune.models.qwen2_5.qwen2_5_0_5b
+
+checkpointer:
+  _component_: torchtune.training.FullModelHFCheckpointer
+  checkpoint_dir: ${model_dir}
+  checkpoint_files: [model.safetensors]
+  output_dir: ${output_dir}
+  model_type: QWEN2
+
+tokenizer:
+  _component_: torchtune.models.qwen2_5.qwen2_5_tokenizer
+  path: ${model_dir}/vocab.json
+  merges_file: ${model_dir}/merges.txt
+  max_seq_len: null
+
+max_context_length: null
+
+dataset_name: recall_niah
+dataset:
+  _component_: kvcompression.data.recall_dataset.RecallNIAHDataset
+  # built offline by eval/make_recall_prompts.py and committed in the kvp-eviction repo
+  prompts_file: /workspace/kv/kvp-eviction/data/recall_prompts.jsonl
+
+total_num_chunks: 1
+current_chunk: 0

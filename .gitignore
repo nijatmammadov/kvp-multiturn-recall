@@ -1,0 +1,25 @@
+# per-dialogue .npz eviction logs (large; archived separately)
+results/logs_eval_v2/*/
+results/logs_determinism/
+logs_smoke*/
+__pycache__/
+logs_determinism_v3/
+results/logs_eval_v3/*/
+results/logs_eval_v3_seed1/*/
+results/logs_eval_v4/*/
+results/logs_eval_v4_lead2/*/
+logs_smoke_v6/
+results/logs_eval_v5_words/*/
+logs_determinism_v5/
+results/logs_eval_v5_words_q1/*/
+results/logs_eval_v5_words_q2/*/
+results/logs_eval_v6_breadth/*/
+logs_check_v6/
+results/logs_eval_v6k_fp32/*/
+logs_speed_v6k/
+results/logs_eval_v6k_fp32_lead2/*/
+logs_regress_v6b/
+logs_regress_v7/
+logs_speed_v8/
+results/logs_eval_v8_1p5b_fp32/*/
+results/logs_eval_v8_0p5b_fp32/*/

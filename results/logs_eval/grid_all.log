@@ -1,0 +1,88 @@
+== smoke 22:07:01
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+
+h2o_b128_bf16
+k=2: acc 0.500 (n=2), needle survival at answer 0.006
+k=4: acc 0.000 (n=2), needle survival at answer 0.002
+k=8: acc 0.000 (n=2), needle survival at answer 0.001
+== full b0 22:10:33
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+full_b0_bf16
+k=2: acc 1.000 (n=60), needle survival at answer 0.016
+k=4: acc 1.000 (n=60), needle survival at answer 0.010
+k=8: acc 1.000 (n=60), needle survival at answer 0.005
+== streaming b128 23:28:43
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+streaming_b128_bf16
+k=2: acc 0.000 (n=60), needle survival at answer 0.000
+k=4: acc 0.000 (n=60), needle survival at answer 0.000
+k=8: acc 0.000 (n=60), needle survival at answer 0.000
+== streaming b256 00:45:27
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+streaming_b256_bf16
+k=2: acc 0.400 (n=60), needle survival at answer 0.008
+k=4: acc 0.033 (n=60), needle survival at answer 0.000
+k=8: acc 0.000 (n=60), needle survival at answer 0.000
+== h2o b128 02:00:23
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+h2o_b128_bf16
+k=2: acc 0.050 (n=60), needle survival at answer 0.005
+k=4: acc 0.083 (n=60), needle survival at answer 0.003
+k=8: acc 0.017 (n=60), needle survival at answer 0.002
+== h2o b256 03:21:36
+Skipping import of cpp extensions due to incompatible torch version 2.10.0+cu128 for torchao version 0.15.0             Please see https://github.com/pytorch/ao/issues/2919 for more info
+20/180
+40/180
+60/180
+80/180
+100/180
+120/180
+140/180
+160/180
+180/180
+
+h2o_b256_bf16
+k=2: acc 0.417 (n=60), needle survival at answer 0.014
+k=4: acc 0.100 (n=60), needle survival at answer 0.004
+k=8: acc 0.083 (n=60), needle survival at answer 0.002
+== grid done 04:42:15
