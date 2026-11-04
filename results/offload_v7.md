@@ -23,4 +23,4 @@ S2 (secondary, digits): offload vs h2o: only offload right 105, only h2o right 0
 Descriptive (words): oracle (turn kept in all heads) vs offload: only oracle right 0, only offload right 0, p = 1.
 Descriptive (digits): oracle (turn kept in all heads) vs offload: only oracle right 0, only offload right 0, p = 1.
 
-Caveat (pre-registered): retrieval is lexical and the benchmark questions repeat the needle's words, so R0 is near-perfect by construction; this measures the eviction side, not retrieval under paraphrase.
+Caveat (stated before the run): retrieval is lexical and the benchmark questions repeat the needle's words, so R0 is near-perfect by construction; this measures the eviction side, not retrieval under paraphrase.

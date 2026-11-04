@@ -91,7 +91,7 @@ def main():
         t = pair(runs, ids, "oracle", "offload")
         lines.append(f"Descriptive ({s}): oracle (turn kept in all heads) vs offload: only oracle right {t[0]}, "
                      f"only offload right {t[1]}, p = {t[2]:.2g}.")
-    lines += ["", "Caveat (pre-registered): retrieval is lexical and the benchmark questions repeat the needle's words, "
+    lines += ["", "Caveat (stated before the run): retrieval is lexical and the benchmark questions repeat the needle's words, "
               "so R0 is near-perfect by construction; this measures the eviction side, not retrieval under paraphrase."]
     text = "\n".join(lines) + "\n"
     Path(args.out).write_text(text)

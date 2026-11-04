@@ -35,7 +35,7 @@
 | kvp_ft_pool8 vs kvp_ft | 256 | 4 | 60 | 13 | 7 | 0.26 | 1 |
 | kvp_ft_pool8 vs kvp_ft | 256 | 8 | 60 | 1 | 2 | 1 | 1 |
 
-## Pre-registered pooled test (k in [4, 8], not adjusted)
+## Pooled test fixed in advance (k in [4, 8], not adjusted)
 
 | A vs B | b | n | only A right | only B right | p |
 |---|---|---|---|---|---|

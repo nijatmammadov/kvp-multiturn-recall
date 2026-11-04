@@ -1,4 +1,4 @@
-"""Batch v5 exploratory analyses (not pre-registered; descriptive only). CPU only.
+"""Batch v5 exploratory analyses (rules not fixed in advance; descriptive only). CPU only.
 
 A. Pooling at b=256 on the digit sets (seed-0, lead-2): per k, paired counts kvp_ft_pool{4,8} vs kvp_ft
    (only-pooled-right / only-kvp_ft-right) and means of needle_at_answer / needle_heads_full_at_answer per config.
@@ -189,7 +189,7 @@ def main():
     keep = {i for i, r in ref.items() if r["correct"]}
     words = {key: {i: r for i, r in recs.items() if i in keep} for key, recs in words.items()}
 
-    lines = ["# Batch v5: exploratory analyses (not pre-registered)", "",
+    lines = ["# Batch v5: exploratory analyses (rules not fixed in advance)", "",
              "Descriptive only; not part of the rule verdicts.", "",
              "## A. Pooling at b=256, digit sets", "",
              "Paired against kvp_ft on the same dialogues. needle_at_answer = share of needle tokens kept (mean over "

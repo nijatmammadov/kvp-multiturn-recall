@@ -1,0 +1,25 @@
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Words, 0.5B & Digits, 0.5B & Words, 1.5B \\
+\midrule
+Full cache & 112/112 (100\%) & 120/120 (100\%) & 117/117 (100\%) \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Eviction methods (usable in a real chat)}}\\
+\quad StreamingLLM & 0/112 (0\%) & -- & 0/117 (0\%) \\
+\quad H2O & 59/112 (53\%) & 15/120 (12\%) & -- \\
+\quad KVP & 4/112 (4\%) & 5/120 (4\%) & -- \\
+\quad StreamingLLM + restore & 111/112 (99\%) & -- & \textbf{116/117 (99\%)} \\
+\quad KVP + restore & \textbf{112/112 (100\%)} & \textbf{120/120 (100\%)} & -- \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Diagnostic: part of the fact force-kept, using its known position}}\\
+\quad StreamingLLM + answer tokens & 0/112 (0\%) & -- & 0/117 (0\%) \\
+\quad StreamingLLM + answer + linking phrase & 105/112 (94\%) & -- & 116/117 (99\%) \\
+\quad StreamingLLM + whole user turn & 112/112 (100\%) & -- & 116/117 (99\%) \\
+\quad KVP + answer tokens & 35/112 (31\%) & 111/120 (92\%) & -- \\
+\quad KVP + answer + linking phrase & 88/112 (79\%) & 119/120 (99\%) & -- \\
+\quad KVP + whole user turn, 6 of 48 heads & 7/112 (6\%) & -- & -- \\
+\quad KVP + whole user turn, 12 of 48 heads & 11/112 (10\%) & -- & -- \\
+\quad KVP + whole user turn, 24 of 48 heads & 40/112 (36\%) & -- & -- \\
+\quad KVP + whole user turn, all 48 heads & 112/112 (100\%) & 120/120 (100\%) & -- \\
+\bottomrule
+\end{tabular}

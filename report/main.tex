@@ -1,0 +1,184 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathpazo}
+\usepackage[margin=2cm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{pifont}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{positioning,calc,arrows.meta}
+\usepackage[font=small,labelfont=bf,skip=4pt]{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage[compact]{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titlespacing*{\section}{0pt}{0.7em}{0.3em}
+\titlespacing*{\subsection}{0pt}{0.6em}{0.2em}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+
+\definecolor{ckvp}{HTML}{0072B2}
+\definecolor{ch2o}{HTML}{E69F00}
+\definecolor{crest}{HTML}{009E73}
+\definecolor{cs05}{HTML}{CC79A7}
+\definecolor{cs15}{HTML}{D55E00}
+\definecolor{cgrid}{HTML}{D9D9D9}
+\definecolor{cink}{HTML}{3A3A3A}
+
+% plot height 3 cm over a 0--110 range: 0.02727 cm per percentage point
+\pgfplotsset{
+  report/.style={
+    scale only axis, height=3cm,
+    axis lines*=left, ymin=0, ymax=110, ytick={0,25,50,75,100},
+    ymajorgrids, grid style={cgrid, line width=0.3pt},
+    tick label style={font=\footnotesize, text=cink},
+    label style={font=\footnotesize, text=cink},
+    legend style={font=\footnotesize, draw=none, fill=none},
+    tick align=outside, major tick length=2pt,
+    every axis plot/.append style={line width=0.8pt},
+    error bars/error bar style={line width=0.6pt, cink},
+    error bars/error mark options={rotate=90, mark size=1.5pt, line width=0.6pt},
+  },
+  boxlegend/.style={legend image code/.code={\fill[##1] (0cm,-0.08cm) rectangle (0.25cm,0.12cm);}},
+}
+
+\setlist{nosep, leftmargin=1.4em}
+\setlength{\parskip}{0.25em}
+\setlength{\parindent}{0pt}
+
+\newcommand{\cmark}{\textcolor{crest}{\ding{51}}}
+\newcommand{\xmark}{\textcolor{cs15}{\ding{55}}}
+\newcommand{\ph}{p_\text{Holm}}
+\definecolor{cseq}{HTML}{F08C2E}
+\newcommand{\tk}[2]{{\setlength{\fboxsep}{0.4pt}\colorbox{cseq!#1!white}{\vphantom{Ag}#2}}}
+\newcommand{\tokpanel}[5]{%
+  \begin{minipage}[t]{0.325\textwidth}\raggedright
+  {\small\bfseries #1}\\[1pt]
+  {\scriptsize\rmfamily Turn 3:}\ {\scriptsize #3}\\[0.5pt]
+  {\scriptsize\rmfamily\itshape (four unrelated turns)}\\[0.5pt]
+  {\scriptsize\rmfamily Turn 8:}\ {\scriptsize #4}\\[1.5pt]
+  {\scriptsize #2\ #5}
+  \end{minipage}}
+\newcommand{\tokscale}{{\scriptsize 0 of 48 heads\ \foreach \p in {0,10,...,100}{\tk{\p}{\phantom{0}}}\ 48 of 48 heads}}
+\newcommand{\headmatrix}[6]{%
+  \begin{tikzpicture}[every node/.style={text=cink}]
+  \def\cw{0.135}\def\ch{0.05}
+  \fill[black!6] (0,0) rectangle (#3*\cw,-#4*\ch);
+  \foreach \c/\h in {#6} \fill[ckvp] (\c*\cw+0.015,-\h*\ch-0.004) rectangle ++(\cw-0.03,-\ch+0.008);
+  \foreach \a/\b/\n in {#5} {\draw[cink, line width=0.6pt] (\a*\cw+0.01,0.07) -- (\b*\cw+\cw-0.01,0.07); \node[anchor=south, inner sep=1pt, font=\tiny] at (\a*\cw/2+\b*\cw/2+\cw/2,0.07) {\n};}
+  \foreach \l/\r in {0/0,8/16,16/32,23/46} \node[anchor=east, inner sep=1pt, font=\tiny] at (0,-\r*\ch-\ch) {L\l};
+  \node[anchor=north, font=\scriptsize, align=center, text width=#3*\cw cm+0.3cm, inner sep=1pt] at (#3*\cw/2,-#4*\ch-0.04) {#1 #2};
+  \end{tikzpicture}}
+
+\title{\vspace{-1.7cm}\Large Learned KV-Cache Eviction Forgets Facts in Multi-Turn Dialogue\\[0.2em]
+  \large Technical report, work in progress (draft of 28 October 2026)}
+\author{Nijat Mammadov \quad \small Eötvös Loránd University (ELTE), Budapest \quad \texttt{nijat.mmmadov@gmail.com}}
+\date{\vspace{-0.6em}October 2026\vspace{-0.8em}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Learned KV-cache eviction (KVP) has been evaluated with the cache compressed once after the context is read; in a chat the cache is cut back after every turn, and we ask whether facts from early turns survive.
+On a synthetic multi-turn needle test with Qwen2.5-0.5B-Instruct and 256 retained tokens per KV head, KVP agents we trained with Apple's code and fine-tuned on recall data answer 4 of 112 word facts and 5 of 120 digit facts, counted on the dialogues the full cache answers (112/120 and 120/120); the H2O heuristic answers 59/112 and 15/120.
+Forcing parts of the fact to stay in the cache shows that the answer tokens are not enough: adding the short phrase linking the fact to its subject raises word recall from 35 to 88 of 112 under KVP, and from 0 to 116 of 117 under StreamingLLM at 1.5B.
+Keeping the whole user turn in 24 random heads of 48 gives 40/112; in all 48, 112/112.
+Restoring the lexically retrieved user turn into all heads from a CPU archive, with the same retained GPU budget, recovers every fact on both sets.
+Equal-size controls, selected head subsets and retrieval under paraphrase remain open.
+Code, trained agents and per-dialogue results will be released at \url{https://github.com/nijatmammadov/kvp-multiturn-recall}.
+\end{abstract}
+
+\section{Introduction}
+
+Eviction methods keep the KV cache of a language model at a fixed size by deciding which cached tokens to drop.
+KVP \cite{kvp} learns this decision: a small reinforcement-learning agent per KV head ranks cached tokens by predicted future attention from keys, values and positions alone, and it beats heuristic baselines on RULER and on OASST2 perplexity, with the cache compressed once after the input is read.
+In a chat, eviction repeats after every turn: a fact stated early must survive every later cut, and the question that needs it arrives only at the end.
+SCBench \cite{scbench} evaluates KV-cache methods on multi-turn shared-context workloads; KVP postdates it. We test KVP under repeated conversational eviction and find:
+\begin{itemize}
+  \item Our KVP agents recall 4/112 word and 5/120 digit facts; H2O, 59/112 and 15/120 (\S\ref{sec:forgets}).
+  \item Answer tokens are not enough; adding the 3--4-token linking phrase lifts KVP from 35 to 88 of 112 (\S\ref{sec:survive}).
+  \item Recall grows with heads holding the whole user turn: 40/112 at 24 of 48, 112/112 at 48 (\S\ref{sec:heads}).
+  \item Restoring the retrieved turn into all heads recovers 112/112 and 120/120 at the same GPU budget (\S\ref{sec:fix}).
+  \item Answer-token survival alone is not sufficient for recall (\S\ref{sec:survival}).
+\end{itemize}
+
+\begin{figure}[t]
+\input{data/fig1_panels.tex}
+\par\smallskip
+\centering\tokscale
+\caption{Tokens still in the cache when the question arrives, for one word-set dialogue (view after \cite{kvp}, Fig.~1). Shade: share of the 48 KV heads holding the token. Bold: answer tokens; italic: linking phrase; below each panel, the model's actual answer.}
+\label{fig:concept}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\input{data/fig2_heads.tex}
+\caption{Where does each of the 48 KV heads keep the fact when the question arrives? Same dialogue as Fig.~\ref{fig:concept}. Rows: words of the fact sentence (bold: answer; italic: linking phrase); columns: the 48 heads, layer 0 on the left. Blue: the head still holds the word. Green: the head holds the complete fact, linking phrase and answer together. In the second and third panels those words are force-kept in all heads. Layout after \cite{kvp}, Fig.~11.}
+\label{fig:heads}
+\end{figure}
+
+\section{Setup}
+
+\textbf{Models.} Qwen2.5-0.5B-Instruct (48 KV heads) and Qwen2.5-1.5B-Instruct (56 KV heads) \cite{qwen25}. Apple's KVP weights are not released, so we trained the 48 agents for 0.5B with Apple's code (commit \texttt{d33c2dc}) and the base model frozen: 4,000 steps each on 400 OASST2 \cite{oasst} training traces (of 500; 50 validation, 50 held out), then a 1,500-step warm start on those 400 plus 500 synthetic recall training traces (of 600; 50/50 validation/held out), keeping the checkpoint with the best validation reward. The reward scores how well an agent ranks tokens by future attention in recorded traces, not answer correctness under repeated eviction. On held-out OASST2 traces the agents rank tokens better than StreamingLLM on 41 of 48 heads, but better than an accumulated-attention (H2O-style) ranking on only 28 of 48 (mean cost 1.876 vs 1.895). Apple trained each agent for the same 4,000 steps but on about 4,500 OASST2 samples \cite{kvp}; how our agents compare with theirs is unverified. An OASST2-only control for the extra fine-tuning was not completed (compute ran out), so any change after fine-tuning cannot be attributed to the recall data rather than to extra training. \emph{All KVP results below use these fine-tuned agents}; in an earlier bf16 run the agents before fine-tuning did no better on words (0/119 vs 2/119 at $k = 4, 8$). There are no KVP agents for 1.5B, so tests at that size use StreamingLLM as the base.
+
+\textbf{Eviction.} Evicted keys and values are deleted. After each user message and each reply, every KV head is cut to 256 tokens; the first 4 and last 16 are always kept. Between cuts the cache grows by the new turn. Baselines: full cache, StreamingLLM \cite{streamingllm} (first and most recent tokens) and H2O \cite{h2o} (highest accumulated attention, with the same first/last protection). All methods get the same user messages but write their own replies. Greedy decoding, fp32, one NVIDIA T4.
+
+\textbf{Task.} Each synthetic dialogue has two unrelated OASST2 user turns, the fact as turn 3, $k \in \{4, 8\}$ more unrelated turns, then the question; the model replies to every turn (about 1,000 tokens per dialogue). \emph{Word} facts name an invented pet and its city (correct if the answer contains both and no other listed city); \emph{digit} facts give a five-digit code (correct if the extracted code matches). Each set has 120 dialogues. To locate what must survive, we force the answer tokens, the answer plus the linking phrase (``cousin's hamster''), or the whole user turn (including chat-template tokens) to stay in all heads or in $n$ random heads.
+
+\textbf{Statistics.} Experiments ran in batches with decision rules fixed before each batch; later hypotheses followed earlier results. On the word sets the pre-set full-cache accuracy check failed twice, so every word-set comparison was instead conditioned on full-cache-correct dialogues; this was decided before any eviction method was run on a word set. Accuracy is counted on dialogues the full cache answers: 112/120 (words), 120/120 (digits), 117/120 (words, 1.5B). Methods are compared on the same dialogues with exact McNemar tests (Holm-adjusted within a batch), reported as discordant counts, with Wilson 95\% intervals.
+
+\section{Results}
+
+\subsection{Our KVP agents forget}\label{sec:forgets}
+KVP answers 4/112 word facts (3.6\%, CI 1.4--8.8) and 5/120 digit facts (4.2\%, CI 1.8--9.4) (Table~\ref{tab:all}). H2O does better on both, 59/112 and 15/120 (56 vs 1 discordant, $\ph = 1.6\times10^{-15}$; 12 vs 2, $\ph = 0.026$): a simple heuristic beats our learned agents here. Whether better-trained agents would close this gap is open (\S2).
+
+\subsection{What must survive}\label{sec:survive}
+Fig.~\ref{fig:heads} shows one dialogue: the complete fact is in 0, 2 and 48 of the 48 heads under KVP, KVP + answer tokens and KVP + answer + linking phrase, and only the last answers correctly. Over the word set, keeping the answer tokens in all heads gives 35/112 under KVP and 0/112 and 0/117 under StreamingLLM at 0.5B and 1.5B (Table~\ref{tab:all}). Adding the linking phrase raises this to 88/112, 105/112 and 116/117 (KVP: 55 vs 2 discordant, $\ph = 4.6\times10^{-14}$; 1.5B: 116 vs 0, $\ph = 7.2\times10^{-35}$); the whole user turn gives 112/112, 112/112 and 116/117. Under KVP, answer + linking phrase is weaker at the longer gap ($k = 4$: 55/58; $k = 8$: 33/54). The pattern holds at both sizes and supports a role for the linking phrase, but adding it also retains more tokens (3--4 per dialogue): equal-size controls (unrelated tokens, a wrong-subject phrase) are not yet run. On digits, answer-only protection achieves 111/120.
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Recall (correct/dialogues; $k = 4, 8$; 256 retained tokens per KV head), counted only on dialogues the full cache answers (112/120, 120/120, 117/120), so full cache is 100\% by construction. Bold: best usable method per column. Diagnostic rows force part of the fact to stay in the cache (all heads unless stated), which needs its position: a probe, not a method. ``Whole user turn'' includes chat-template tokens. Restore uses an extra CPU archive. --: not run (no KVP agents at 1.5B).}
+\label{tab:all}
+\input{data/table1.tex}
+\end{table}
+
+\subsection{How many heads}\label{sec:heads}
+Keeping the whole user turn in 0, 6, 12, 24 and 48 random heads gives 4, 7, 11, 40 and 112 of 112 (Table~\ref{tab:all}). The same dialogues are used at every level, so we report these counts descriptively. Recall rises steeply between 24 and 48 heads, but we tested no counts in between and used one nested random-subset sequence per dialogue, without repeated subset seeds, so whether a smaller, selected set suffices is open. Head count, layer coverage and the number of forced entries change together.
+
+\subsection{Recovery by restoring the retrieved user turn}\label{sec:fix}
+CPU offloading is known (InfLLM \cite{infllm}, Quest \cite{quest}); we use it to test whether restoring the whole turn into all heads, as \S\ref{sec:heads} suggests, recovers recall without knowing where the fact is. We copy every computed key and value, with its position, to a CPU archive. When a new user message arrives, a word-overlap retriever picks the best-matching earlier user message, and its tokens are written back whole into every head, displacing the lowest-ranked entries so each head stays at 256 tokens. This brings KVP from 4/112 to 112/112 on words and from 5/120 to 120/120 on digits (Table~\ref{tab:all}; 108 vs 0 and 115 vs 0 discordant, $\ph < 10^{-32}$), and StreamingLLM at 1.5B from 0/117 to 116/117. On the full-cache-correct subsets, restore and whole-turn protection have identical correctness outcomes (zero discordant pairs). Retrieval is easy here: the questions repeat the fact's words, so word overlap finds the right turn in 112/112 and 120/120; this tests recovery after retrieval, not retrieval under paraphrase (\S4). On the full word set, KVP + restore answers 120/120, against 112/120 for the full cache; we have not analysed why. The retained GPU budget is unchanged at each cut, but total memory is not: the CPU archive grows with the conversation. Measured peak GPU memory equals KVP's (about 2.0\,GB), and on the word set a dialogue takes about 26\% longer (25.8 vs 20.5\,s) in our unoptimized code, at about 1,000 tokens.
+
+\subsection{Answer-token survival is insufficient}\label{sec:survival}
+On the first 20 word dialogues (19 answered by the full cache; a descriptive look, not a test), 47\% of KVP's head--dialogue pairs (426 of 912) hold at least one answer token when the question arrives, yet recall is 0/19; the answer and the linking phrase are together in only 1 of 912 head--dialogue pairs (Fig.~\ref{fig:heads} shows one). Answer tokens can survive while recall fails, so their survival alone does not establish recall. Joint survival of answer and linking phrase within a head is a candidate diagnostic we have not yet tested on held-out data.
+
+
+\section{Limitations}
+\begin{itemize}
+  \item One model family (Qwen2.5, 0.5B and 1.5B); KVP only at 0.5B, with our agents from one training seed. Synthetic dialogues, one fact each; several facts and real conversations are untested. The same dialogue sets were reused across batches, so confirmation on fresh dialogues is still needed.
+  \item We have not compared repeated eviction with one-shot compression of the same transcript, so how much of the failure comes from repetition rather than from the task or our agents is open. Position rescaling and local score pooling did not fix the long-gap failure (earlier bf16 batches, not shown).
+  \item Restore brings back one message (in live chats sometimes an earlier question about the fact), and its CPU archive grows with the conversation. Its word-overlap retriever failed on 4 of 10 paraphrase templates; an embedding retriever found the right message in 1,796 of 1,800, measured as retrieval only, not as final answers.
+  \item At about 1,000 tokens the cache is small next to the weights, so we measure recall under a token budget, not memory savings. The heads in \S\ref{sec:heads} were random; whether a subset such as retrieval heads \cite{retrievalheads} suffices is open.
+\end{itemize}
+
+\section{Next steps}
+Over the next two months we plan to (i) compare repeated eviction with one-shot compression using the same agents, budget and transcripts; (ii) separate the linking phrase from extra retained context with equal-size controls; (iii) test selected and layer-balanced head subsets, with a dependence-aware analysis; (iv) evaluate restore end to end under paraphrase and with several facts, using the embedding retriever; and (v) confirm the main results on fresh dialogues. Restore's memory and latency at scale, and whether agents coordinated across heads keep facts complete without an archive, follow as resources allow. These questions are open; this report describes completed experiments only.
+
+\begin{thebibliography}{9}\small\setlength{\itemsep}{0pt}
+\bibitem{kvp} L.~Moschella, L.~Manduchi, O.~Sener. Learning to Evict from Key-Value Cache. arXiv:2602.10238, 2026.
+\bibitem{scbench} Y.~Li et al. SCBench: A KV Cache-Centric Analysis of Long-Context Methods. ICLR, 2025.
+\bibitem{qwen25} Qwen Team. Qwen2.5 Technical Report. arXiv:2412.15115, 2024.
+\bibitem{oasst} A.~Köpf et al. OpenAssistant Conversations: Democratizing Large Language Model Alignment. NeurIPS Datasets and Benchmarks, 2023.
+\bibitem{streamingllm} G.~Xiao et al. Efficient Streaming Language Models with Attention Sinks. ICLR, 2024.
+\bibitem{h2o} Z.~Zhang et al. H$_2$O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models. NeurIPS, 2023.
+\bibitem{infllm} C.~Xiao et al. InfLLM: Training-Free Long-Context Extrapolation for LLMs with an Efficient Context Memory. arXiv:2402.04617, 2024.
+\bibitem{quest} J.~Tang et al. Quest: Query-Aware Sparsity for Efficient Long-Context LLM Inference. ICML, 2024.
+\bibitem{retrievalheads} W.~Wu et al. Retrieval Head Mechanistically Explains Long-Context Factuality. arXiv:2404.15574, 2024.
+\end{thebibliography}
+
+\end{document}

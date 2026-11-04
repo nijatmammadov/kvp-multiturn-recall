@@ -1,4 +1,4 @@
-"""Exploratory (not pre-registered), CPU only. Reads the per-dialogue .npz eviction logs.
+"""Exploratory (rules not fixed in advance), CPU only. Reads the per-dialogue .npz eviction logs.
 
 1. Echo retention. For each method, finds every copy of the needle in that method's OWN token stream: the original
    (needle user turn) and echoes (the fact repeated in an assistant reply before the question). At answer time it
@@ -234,7 +234,7 @@ def main():
     keep = {i for i, r in full.items() if r["correct"]}
     wn = args.words_npz or args.words
     words_parts = lambda r: dict(zip(("name", "city"), r["value"].split(" | ")))
-    lines = ["# Echo retention and head coverage (v5, exploratory, not pre-registered)", "",
+    lines = ["# Echo retention and head coverage (v5, exploratory, rules not fixed in advance)", "",
              f"Words: conditioned on the full cache answering correctly ({len(keep)} / {len(full)}). "
              "All original-copy numbers were recomputed from the kept indices and match the logged fields.", ""]
     lines += echo_section("Echoes, words", tok, args.words, wn, args.words_configs, keep, words_parts, ["name", "city"])

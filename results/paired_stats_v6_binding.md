@@ -47,7 +47,7 @@ Conditioned on full:0 correct: 175 / 180 dialogues kept.
 | kvp_ft_turn_heads48 vs kvp_ft_heads48 | 256 | 4 | 59 | 25 | 0 | 6e-08 | 6e-08 |
 | kvp_ft_turn_heads48 vs kvp_ft_heads48 | 256 | 8 | 60 | 53 | 0 | 2.2e-16 | 4.4e-16 |
 
-## Pre-registered pooled test (k in [4, 8], not adjusted)
+## Pooled test fixed in advance (k in [4, 8], not adjusted)
 
 | A vs B | b | n | only A right | only B right | p |
 |---|---|---|---|---|---|

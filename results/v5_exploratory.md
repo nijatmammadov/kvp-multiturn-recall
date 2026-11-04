@@ -1,4 +1,4 @@
-# Batch v5: exploratory analyses (not pre-registered)
+# Batch v5: exploratory analyses (rules not fixed in advance)
 
 Descriptive only; not part of the rule verdicts.
 

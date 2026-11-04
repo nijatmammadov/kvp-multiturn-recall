@@ -1,4 +1,4 @@
-# Echo retention and head coverage (v5, exploratory, not pre-registered)
+# Echo retention and head coverage (v5, exploratory, rules not fixed in advance)
 
 Words: conditioned on the full cache answering correctly (175 / 180). All original-copy numbers were recomputed from the kept indices and match the logged fields.
 

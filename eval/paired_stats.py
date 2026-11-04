@@ -64,7 +64,7 @@ def main():
     ap.add_argument("--pairs", nargs="+", default=["kvp:h2o", "kvp:streaming"])
     ap.add_argument("--out", default="")
     ap.add_argument("--pool_ks", default="",
-                    help="also one pre-registered test per pair and budget pooling these k values, e.g. 4,8 "
+                    help="also one test fixed in advance per pair and budget pooling these k values, e.g. 4,8 "
                          "(reported separately, not Holm-adjusted)")
     ap.add_argument("--condition_on", default="",
                     help="METHOD:BUDGET, e.g. full:0 - keep only dialogues that config answered correctly")
@@ -118,7 +118,7 @@ def main():
                      f"{t['p']:.2g} | {t['p_holm']:.2g} |")
     if args.pool_ks:
         pool = {int(k) for k in args.pool_ks.split(",")}
-        lines += ["", f"## Pre-registered pooled test (k in {sorted(pool)}, not adjusted)", "",
+        lines += ["", f"## Pooled test fixed in advance (k in {sorted(pool)}, not adjusted)", "",
                   "| A vs B | b | n | only A right | only B right | p |", "|---|---|---|---|---|---|"]
         for pair in args.pairs:
             a, c = pair.split(":")

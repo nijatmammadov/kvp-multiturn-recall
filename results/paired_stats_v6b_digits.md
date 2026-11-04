@@ -24,7 +24,7 @@ Conditioned on full:0 correct: 120 / 120 dialogues kept.
 | kvp_ft_turn_heads48 vs kvp_ft_keyval_heads48 | 256 | 4 | 60 | 1 | 0 | 1 | 1 |
 | kvp_ft_turn_heads48 vs kvp_ft_keyval_heads48 | 256 | 8 | 60 | 0 | 0 | 1 | 1 |
 
-## Pre-registered pooled test (k in [4, 8], not adjusted)
+## Pooled test fixed in advance (k in [4, 8], not adjusted)
 
 | A vs B | b | n | only A right | only B right | p |
 |---|---|---|---|---|---|

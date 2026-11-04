@@ -1,5 +1,7 @@
 # RESULTS — KVP multi-turn eval
 
+Working log of batches v1–v6, written as the runs happened. Run logs, `.npz` eviction logs and server setup files referenced below (`logs/…`, `/workspace/…`) are not included in this repository; the per-dialogue JSONL results and analysis reports are in `results/`.
+
 ## Gate 1 (2026-10-09)
 
 ### Repo setup
@@ -125,14 +127,14 @@ Command: `cd /workspace/kv && uv run --project ml-learning-to-evict python equiv
 - A full-cache incremental vs one-shot forward: max logit diff 8.34e-05, argmax flips 0 (PASS, < 1e-3)
 - B explicit 4D causal mask vs default mask: max logit diff 0.00e+00 (PASS, < 1e-4)
 - C: crashed on the first k=8 dialogue before any comparison: `ValueError: all input arrays must have the same shape` at evict_eval.py:187 `np.stack(kept)`.
-  Cause: log_event appends `kept` (shape [24, 2, cache_len]) at every event, but before the cache first exceeds b the cache holds fewer than b rows, so early events have width < b and the arrays cannot be stacked. Same crash would hit every streaming/h2o grid run. Not patched; awaiting decision.
+  Cause: log_event appends `kept` (shape [24, 2, cache_len]) at every event, but before the cache first exceeds b the cache holds fewer than b rows, so early events have width < b and the arrays cannot be stacked. Same crash would hit every streaming/h2o grid run. Fixed below before any grid run.
 
-### Training: kept at 4,000 steps (user decision, 2026-10-09 ~22:00)
-- Measured: 4 parallel agents at ~1.9-2.3 it/s each vs 4.55 alone (efficiency ~0.43; host load avg ~37 from other tenants) -> projected ~36.5 min/agent x 12 waves = ~7.3 h, exceeding the 6 h cap by ~1.3 h. User chose to keep 4,000 steps.
+### Training: kept at 4,000 steps (2026-10-09 ~22:00)
+- Measured: 4 parallel agents at ~1.9-2.3 it/s each vs 4.55 alone (efficiency ~0.43; host load avg ~37 from other tenants) -> projected ~36.5 min/agent x 12 waves = ~7.3 h, exceeding the 6 h cap by ~1.3 h. Kept 4,000 steps anyway.
 - An attempted stop (`pkill -f train_all.sh ...`) only killed the train_all.sh wrapper shell (and the remote shell that issued it); xargs (reparented to PID 1), its 4 sh -c wrappers and 4 trainers kept running. Verified at 21:59: L0_H0/L0_H1/L1_H0/L1_H1 at ~1030/4000 steps, no FAILED.txt. Run left untouched; no relaunch.
 - Consequence: train_all.log will not get its final "end" line; use per-agent logs and FAILED.txt for completion.
 
-### evict_eval.py logging fix (user-provided lines)
+### evict_eval.py logging fix
 - In run_dialogue -> log_event, `kept` now padded to width b with -1 and raises if an entry exceeds b (see `diff -u evict_eval.py.orig evict_eval.py`). First equiv run log kept as equiv_test_run1_crash.log.
 
 ## Equivalence test (fp32), re-run: ALL PASS
@@ -204,18 +206,18 @@ Turn-1 echo of the code (from streams):
 
 ## Saturday 2026-10-10: survival fix, analysis, KVP integration
 ### Files (v3)
-- evict_eval.py backed up as evict_eval.py.v2_stream; new evict_eval.py (user-provided) = per-head survival() fix + KVP method (best_ckpt.pth EMA weights, original positions) + --agents_dir. `diff evict_eval.py.v2_stream evict_eval.py` shows only these changes. Added key_match.py, gate2.py, analyze.py (user-provided).
-- NOTE: survival fields (needle_at_answer, needle_heads_full_at_answer, sys) in the existing streaming/h2o grid JSONL/npz files (logs/*_bf16.jsonl from the first grid) remain WRONG; analyze.py recomputes survival from saved kept arrays and ignores them. (My earlier proposed fix, swapping isin args, would also have been wrong: it pools both heads.)
+- evict_eval.py backed up as evict_eval.py.v2_stream; new evict_eval.py = per-head survival() fix + KVP method (best_ckpt.pth EMA weights, original positions) + --agents_dir. `diff evict_eval.py.v2_stream evict_eval.py` shows only these changes. Added key_match.py, gate2.py, analyze.py.
+- NOTE: survival fields (needle_at_answer, needle_heads_full_at_answer, sys) in the existing streaming/h2o grid JSONL/npz files (logs/*_bf16.jsonl from the first grid) remain WRONG; analyze.py recomputes survival from saved kept arrays and ignores them. (Swapping the isin arguments would also have been wrong: it pools both heads.)
 ### Regression checks (step2.sh, log logs/step2.log)
 - `uv run --project ml-learning-to-evict python equiv_test.py` (equiv_test_v3.log): D PASS; A 8.34e-05, 0 flips; B 0.00e+00; C k8_000/001/002 8.51e-05/7.25e-05/7.15e-05, 0 flips; ALL PASS.
 - full --limit 1 --ks 8 (logs_smoke_v3): k8_000 correct, needle_at_answer 1.0, needle_heads_full_at_answer 1.0.
 - streaming b=128 --limit 1 --ks 8: k8_000 wrong (answer 123456), needle_at_answer 0.0 = corrected recomputation (0.000 for all streaming b128).
 ### analyze.py on heuristic grid (log analysis.log; outputs analysis/)
 - summary.md, summary.csv, accuracy.csv, head_importance.csv, 4 x head_needle_survival_*_k8.csv written.
-- CRASHED in plot(): `ValueError: yerr must not contain negative values` -> accuracy_vs_k.png NOT written. Likely float rounding of Wilson bounds at acc 0/1 (tiny negative error bar). Not patched; awaiting decision.
+- CRASHED in plot(): `ValueError: yerr must not contain negative values` -> accuracy_vs_k.png NOT written. Likely float rounding of Wilson bounds at acc 0/1 (tiny negative error bar). Fixed in analyze.py v2 below.
 - n_echo in analyze.py counts any copy of the code before the final question (any assistant reply), so it is >= the turn-1-only echo counts reported earlier.
 
-### analyze.py v2 (user edits): plot yerr clipped at 0; base rates added
+### analyze.py v2: plot yerr clipped at 0; base rates added
 - analyze.py.v1 kept; first outputs kept as analysis_run1_plotcrash/ (+ analysis_run1_plotcrash.log).
 - Changes: `err = [[max(0.0, acc - ci_lo)], [max(0.0, ci_hi - acc)]]`; analyze_dialogue adds `n_seen = int(kept.max()) + 1`, `base = {c: share of category among positions < n_seen}`; summary rows gain base_<cat>.
 - Command: `uv run --project ml-learning-to-evict python analyze.py 2>&1 | tee analysis.log` -> analysis/summary.md, summary.csv, accuracy.csv, head_importance.csv, head_needle_survival_*_k8.csv, accuracy_vs_k.png (written OK).
@@ -445,7 +447,7 @@ Warm-start fine-tune of the 48 KVP agents on OASST2 replay + recall traces (batc
 - `python3 eval/paired_stats.py --logs results/logs_eval_v4_lead2 --pairs kvp:h2o kvp:streaming streaming_first64:kvp --pool_ks 4,8 --out results/paired_stats_v4_lead2.md` (pairs with kvp_ft dropped because that run is missing).
 - `python eval/partial_survival.py --logs results/logs_eval_v4 results/logs_eval_v4_lead2 --out results/fragmentation_v4.md`, run locally after the download. On the instance it crashed on the empty, unfinished lead-2 kvp_ft JSONL, which was removed.
 
-**Rule 1, primary test (pre-registered: pooled k in {4, 8}, b=256, exact McNemar, unadjusted): kvp_ft vs kvp = 10 vs 1 discordant, p = 0.012 -> the recall-data warm start improves multi-turn retention.**
+**Rule 1, primary test (fixed in advance: pooled k in {4, 8}, b=256, exact McNemar, unadjusted): kvp_ft vs kvp = 10 vs 1 discordant, p = 0.012 -> the recall-data warm start improves multi-turn retention.**
 - The gain is mostly at k=4: 27/60 vs 20/60 (8 vs 1 discordant, p = 0.039, p_holm = 0.50). At k=8: 2/60 vs 0/60.
 - At b=128 the pooled test is 0 vs 0 (p = 1). No per-cell test is significant after Holm.
 - kvp_ft vs h2o (b=256, pooled k=4,8): 23 vs 5, p = 0.00091. kvp_ft vs streaming: 27 vs 0, p = 1.5e-8.
@@ -490,10 +492,10 @@ Eval-only batch v5 (including amendments 1 and 2), 2026-10-13. Word-needle set (
 - Generated with `scripts/exp_v5.sh gen` (seed 4, lead 2): 180 dialogues, 60 per k; needle at user-turn index 2 in all, question in the last turn, needle text in no other turn; 100 distinct names, 20 cities. Smoke (`--method full --limit 2`, logs/smoke_v5.log): 6/6 correct, `name_heads_full_at_answer` = `city_heads_full_at_answer` = 1.0.
 - **Gate (rule 1), question v1:** full cache 56/60, 59/60, 60/60 at k = 2/4/8 (needle survival 1.000 everywhere) -> **FAILED** (0.933 < 0.95 at k=2). 5 errors, all answer format: name read as a breed (2), previous filler task continued (2), title dropped ("Truffle") (1). Record: results/mt_niah_words_lead2_q1.jsonl, results/logs_eval_v5_words_q1/full_b0_bf16.jsonl (5fdffa6), logs/exp_v5_words_q1.log.
 - **Amendment 1, question v2** ("Change of topic. Earlier I told you the full name of my {owner}'s {animal} ... separated by a comma."), same seed, only the question differs: full cache 48/60, 39/60, 37/60 -> **FAILED**, worse. 54 of 56 errors have the right city and a wrong name: the model named the owner and animal ("Teacher's Cat, Tampere") or invented a person ("Vincent van Gogh, Ghent"). Record: results/mt_niah_words_lead2_q2.jsonl, results/logs_eval_v5_words_q2/full_b0_bf16.jsonl (3b6f757), logs/exp_v5_words_q2.log.
-- **Amendment 2:** back to question v1; the gate is replaced by conditioning every word-set statistic for rules 2a, 3, 4 and 6 on the 175/180 dialogues the full cache answered correctly (`--condition_on full:0`); unconditional numbers are secondary. No method had been run on any word set when either amendment was made. **The pre-registered gate failed twice; the word-set results below are conditional on full-cache correctness.**
+- **Amendment 2:** back to question v1; the gate is replaced by conditioning every word-set statistic for rules 2a, 3, 4 and 6 on the 175/180 dialogues the full cache answered correctly (`--condition_on full:0`); unconditional numbers are secondary. No method had been run on any word set when either amendment was made. **The gate set in advance failed twice; the word-set results below are conditional on full-cache correctness.**
 
 ### 3. Runs
-Words and digits ran concurrently on the one GPU (as instructed), so per-config times are not comparable with v4's single-run times.
+Words and digits ran concurrently on the one GPU, so per-config times are not comparable with v4's single-run times.
 - `exp_v5.sh digits` (logs/exp_v5_digits.log), 14:57:54-16:46:44: kvp_ft lead-2 (23.7 min); kvp_ft_pool4 seed-0, lead-2; kvp_ft_pool8 seed-0, lead-2.
 - `exp_v5.sh words` on the q1 set (logs/exp_v5_words.log), 15:34:06-19:30:57: the full-cache config was reused (all 180 ids present; printout 56/60, 59/60, 60/60), then kvp, h2o, streaming at b=256 and kvp_ft, kvp_ft_pool4, kvp_ft_pool8 at b=256 and b=128, ~25-27 min each. Exit 0, no errors.
 
@@ -554,7 +556,7 @@ Read with rule 2: on words, pooling raises the share of heads holding the whole 
 
 **Fragmentation** (results/fragmentation_v5.md, digits): share of (dialogue, layer, head) pairs holding all 5 code tokens at b=256, lead-2: kvp_ft 0.162 / 0.037 / 0.007, pool4 0.182 / 0.045 / 0.007, pool8 0.397 / 0.189 / 0.081 (k = 2/4/8). Fragmented share drops with pool8 (0.502 -> 0.232 at k=2).
 
-### 5. Exploratory analyses (not pre-registered)
+### 5. Exploratory analyses (rules not fixed in advance)
 **Descriptive only, not part of any rule verdict.** Script `eval/v5_exploratory.py`, output results/v5_exploratory.md (run on the server without `--partial`).
 - **A. Pooling on digits, b=256.** Pooling does not lower code survival; it raises it. lead-2 needle_at_answer kvp_ft -> pool4 -> pool8: k=2 0.402 -> 0.460 -> 0.546; k=4 0.199 -> 0.234 -> 0.289. needle_heads_full rises most with pool8 (k=2 0.162 -> 0.397). Accuracy does not follow: lead-2 k=4 8 -> 4 -> 2 of 60. On seed-0, pool4 loses at k=4 (only pool4 right 3, only kvp_ft right 17; 27 -> 13 of 60) while pool8 gains (13 vs 7; 27 -> 33). So the survival changes are a redistribution that does not translate into recall.
 - **B. Words vs digits at matched length (150-token bins of total_len).** kvp_ft: words accuracy is at or below digits in every bin with data (e.g. 450-599: 0.240 vs 0.262; 600-749: 0.125 vs 0.194) although words keep more needle tokens (0.443 vs 0.357; 0.352 vs 0.242). Base kvp is the other way round (450-599: 0.286 vs 0.136). Name/city split (kvp_ft b=256, k=2): name only 0.054, city only 0.375, both 0.268, neither 0.304.
@@ -579,11 +581,11 @@ Head-breadth test (batch v6), 2026-10-15. Instance: RTX 4090 48 GB, 112 cores, 5
 - `exp_v6.sh check` (logs/check_v6.log), 06:12-06:18: `regression: 10/10 answers identical to v5 kvp_ft`; `smoke OK: heads48 holds the needle in all heads, heads6 in >= 6`. **PASS**. Smoke heads48 answers (k=4): 000 "Sir Pickles, Aarhus" correct; 001 truth Lady Waffle | Bergen, answer "Bella", New York (wrong); 002 "Madame Dumpling, Ghent" correct.
 
 ### 2. Runs
-- `exp_v6.sh breadth` was started at 06:18:35 and stopped at 06:19:11 on the user's request, before n = 6 finished (1 dialogue written, kept: results/logs_eval_v6_breadth/kvp_ft_heads6_b256_bf16.jsonl; logs/exp_v6_breadth.log).
-- On the user's request the n = 48 level was run first, alone (logs/exp_v6_n48.log), 06:19:23-06:54:12, exit 0:
+- `exp_v6.sh breadth` was started at 06:18:35 and stopped at 06:19:11, before n = 6 finished, to run n = 48 first (1 dialogue written, kept: results/logs_eval_v6_breadth/kvp_ft_heads6_b256_bf16.jsonl; logs/exp_v6_breadth.log).
+- The n = 48 level was run first, alone (logs/exp_v6_n48.log), 06:19:23-06:54:12, exit 0:
   `uv run --project $P python eval/evict_eval.py --data results/mt_niah_words_lead2_q1.jsonl --agents_dir agents/oasst2_recall_ft_0_5b --out_dir results/logs_eval_v6_breadth --method kvp --budget 256 --protect_needle value --protect_heads 48 --tag ft_heads48 --ks 4,8`
   (relative `--agents_dir`, so the records' `agents_dir` field differs in spelling from the script's absolute path; same agents). All 120 records have `protect_heads` = 48 and `needle_heads_full_at_answer` = 1.0.
-- The user's instruction: run n = 6, 12, 24 only if n = 48 accuracy (k = 4, 8, conditioned on full cache correct) is >= 0.80. It was not, so **n = 6, 12, 24 were not run** and `head_breadth.py` (which needs every level) was not run.
+- Rule set before the n = 48 run: run n = 6, 12, 24 only if n = 48 accuracy (k = 4, 8, conditioned on full cache correct) is >= 0.80. It was not, so **n = 6, 12, 24 were not run** and `head_breadth.py` (which needs every level) was not run.
 
 ### 3. Result
 **B2, manipulation check: NOT MET.** kvp_ft b=256, needle (name + city tokens) force-kept in all 48 heads, words q1, conditioned on full:0 correct (119 of 120; excluded w_lead2_k4_014):

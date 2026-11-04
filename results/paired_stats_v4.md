@@ -74,7 +74,7 @@
 | streaming_first64 vs kvp | 256 | 4 | 60 | 40 | 0 | 1.8e-12 | 4.2e-11 |
 | streaming_first64 vs kvp | 256 | 8 | 60 | 60 | 0 | 1.7e-18 | 5.2e-17 |
 
-## Pre-registered pooled test (k in [4, 8], not adjusted)
+## Pooled test fixed in advance (k in [4, 8], not adjusted)
 
 | A vs B | b | n | only A right | only B right | p |
 |---|---|---|---|---|---|
